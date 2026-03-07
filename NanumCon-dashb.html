@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나눔경영컨설팅 마케팅 인사이트 대시보드</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #0066CC;
+  --primary-light: #00A5E5;
+  --primary-dark: #003D7A;
+  --bg-main: #F5F8FC;
+  --bg-white: #FFFFFF;
+  --accent-orange: #FF6B00;
+  --accent-green: #00B67A;
+  --accent-red: #dc2626;
+  --accent-purple: #7c3aed;
+  --accent-pink: #db2777;
+  --accent-cyan: #0891b2;
+  --text-primary: #1A1A2E;
+  --text-secondary: #5A6070;
+  --text-light: #8A90A0;
+  --border: #E2E8F0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dashboard-wrap {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ─── Header ─── */
+.dash-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  margin-bottom: 28px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.dash-header::after {
+  content: '';
+  position: absolute;
+  top: -40%; right: -10%;
+  width: 300px; height: 300px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.header-text { position: relative; z-index: 1; flex: 1; }
+.header-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 20px; padding: 4px 14px;
+  font-size: 12px; font-weight: 500; margin-bottom: 12px;
+}
+.dash-header h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+.dash-header .subtitle { font-size: 14px; opacity: 0.8; font-weight: 400; }
+.header-right {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.date-badge {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px; color: rgba(255,255,255,0.9);
+}
+.refresh-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff; padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.2s;
+}
+.refresh-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+.refresh-btn:active { transform: translateY(0); }
+.refresh-btn.loading .icon { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Section Card ─── */
+.section-card {
+  background: var(--bg-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  padding: 28px 32px;
+  margin-bottom: 20px;
+}
+.section-title {
+  font-size: 17px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+}
+.section-title .icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.icon-blue { background: #E8F4FD; color: var(--primary); }
+.icon-green { background: #E6F9F1; color: var(--accent-green); }
+.icon-orange { background: #FFF3E6; color: var(--accent-orange); }
+.icon-purple { background: #F3E8FF; color: var(--accent-purple); }
+.icon-red { background: #FEE2E2; color: var(--accent-red); }
+
+/* ─── KPI Grid ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+}
+.kpi-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  transition: all 0.2s;
+  border-top: 3px solid transparent;
+}
+.kpi-card:nth-child(1) { border-top-color: var(--primary); }
+.kpi-card:nth-child(2) { border-top-color: var(--primary-light); }
+.kpi-card:nth-child(3) { border-top-color: var(--accent-orange); }
+.kpi-card:nth-child(4) { border-top-color: var(--accent-green); }
+.kpi-card:nth-child(5) { border-top-color: var(--accent-purple); }
+.kpi-card:nth-child(6) { border-top-color: var(--accent-cyan); }
+.kpi-card:nth-child(7) { border-top-color: var(--accent-pink); }
+.kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.kpi-label { font-size: 12px; color: var(--text-light); margin-bottom: 8px; font-weight: 600; }
+.kpi-value { font-size: 28px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+.kpi-change {
+  font-size: 12px; font-weight: 600; display: inline-flex; align-items: center;
+  gap: 3px; padding: 3px 8px; border-radius: 6px;
+}
+.kpi-change.up { color: var(--accent-green); background: #E6F9F1; }
+.kpi-change.down { color: var(--accent-red); background: #FEE2E2; }
+
+/* ─── Charts ─── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.chart-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+.chart-card h3 {
+  font-size: 14px; font-weight: 700; color: var(--text-primary);
+  margin-bottom: 16px;
+}
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+/* ─── Donut Legend ─── */
+.donut-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); }
+.legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ─── Insights ─── */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+.insight-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+.insight-card:hover { box-shadow: var(--shadow-md); }
+.insight-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.insight-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+}
+.insight-icon.growth { background: #E6F9F1; }
+.insight-icon.warning { background: #FEE2E2; }
+.insight-icon.info { background: #E8F4FD; }
+.insight-icon.strategy { background: #F3E8FF; }
+.insight-title { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.insight-body { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.insight-body strong { color: var(--text-primary); font-weight: 600; }
+
+/* ─── Ecommerce Hero ─── */
+.ecom-hero {
+  background: linear-gradient(135deg, #E8F4FD, #F0EBFF);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.ecom-hero .label { font-size: 14px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 500; }
+.ecom-hero .value { font-size: 48px; font-weight: 800; color: var(--primary-dark); }
+
+/* ─── Table ─── */
+.table-section {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.table-section .section-title { padding: 20px 24px 0; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--border);
+  background: #f8fafc;
+}
+td {
+  padding: 12px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-secondary);
+}
+tr:hover td { background: #f8fafc; }
+.page-name { font-weight: 700; color: var(--primary); }
+.bar-cell { display: flex; align-items: center; gap: 10px; }
+.bar {
+  height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+}
+.bounce-bar { height: 6px; border-radius: 3px; }
+
+/* ─── Action Plan ─── */
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+.plan-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  box-shadow: var(--shadow-sm);
+  border-left: 4px solid transparent;
+}
+.plan-card:nth-child(1) { border-left-color: var(--accent-green); }
+.plan-card:nth-child(2) { border-left-color: var(--accent-orange); }
+.plan-card:nth-child(3) { border-left-color: var(--primary-light); }
+.plan-card:nth-child(4) { border-left-color: var(--accent-purple); }
+.plan-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; color: var(--text-primary); }
+.plan-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.7; }
+.plan-card p strong { color: var(--text-primary); }
+
+/* ─── Footer ─── */
+.dash-footer {
+  text-align: center; padding: 24px; color: var(--text-light); font-size: 12px;
+}
+
+/* ─── Overlay ─── */
+.refresh-overlay {
+  display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(26,26,46,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  justify-content: center; align-items: center; flex-direction: column; gap: 16px;
+}
+.refresh-overlay.active { display: flex; }
+.refresh-overlay iframe {
+  width: 90%; height: 80vh;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: #fff;
+}
+.overlay-close {
+  background: var(--primary-dark); color: #fff; border: none;
+  padding: 12px 28px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.overlay-close:hover { background: #002D5C; }
+
+/* ─── Toast ─── */
+.toast {
+  position: fixed; top: 20px; right: 20px;
+  background: var(--accent-green); color: #fff;
+  padding: 12px 24px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600;
+  z-index: 2000;
+  transform: translateY(-100px); opacity: 0; transition: all 0.4s;
+  box-shadow: var(--shadow-md);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+  .charts-grid, .two-col { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-header { flex-direction: column; text-align: center; }
+  .header-right { justify-content: center; }
+  .insights-grid, .plan-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .dashboard-wrap { padding: 12px 12px 40px; }
+  .dash-header { padding: 24px 20px; }
+  .dash-header h1 { font-size: 20px; }
+  .section-card { padding: 20px 16px; }
+  .kpi-grid { grid-template-columns: 1fr; }
+}
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.section-card, .chart-card, .insight-card, .table-section, .plan-card { animation: fadeInUp 0.5s ease; }
+</style>
+
+<!-- GA4 데이터 로딩 오버레이 -->
+<div id="loadingBar" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(26,26,46,0.75);backdrop-filter:blur(4px);z-index:999;justify-content:center;align-items:center;flex-direction:column;gap:16px;color:#fff;">
+  <div style="width:48px;height:48px;border:4px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite;"></div>
+  <div style="font-size:16px;font-weight:600;" id="loadingMsg">GA4 실제 데이터 불러오는 중...</div>
+  <div style="font-size:13px;opacity:0.7;">Looker Studio와 동일한 최근 7일 기준</div>
+</div>
+
+<div class="dashboard-wrap">
+
+  <!-- Header -->
+  <header class="dash-header">
+    <div class="header-text">
+      <div class="header-badge">📊 Marketing Insights</div>
+      <h1>나눔경영컨설팅 마케팅 인사이트</h1>
+      <p class="subtitle">GA4 기반 웹사이트 트래픽 분석 및 마케팅 전략 리포트</p>
+    </div>
+    <div class="header-right">
+      <div class="date-badge" id="dateRange">2026. 2. 19. ~ 2. 25.</div>
+      <button class="refresh-btn" onclick="refreshData()">
+        <span class="icon">&#x21bb;</span> 새로고침
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI -->
+  <div class="section-card">
+    <div class="section-title"><span class="icon icon-blue">📈</span> 핵심 지표 (KPI)</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">세션수</div>
+        <div class="kpi-value">1,200</div>
+        <span class="kpi-change up">&#9650; 113.1%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">활성 사용자</div>
+        <div class="kpi-value">1,100</div>
+        <span class="kpi-change up">&#9650; 116.3%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">참여율</div>
+        <div class="kpi-value">76%</div>
+        <span class="kpi-change down">&#9660; -12.9%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">새 사용자 수</div>
+        <div class="kpi-value">1,000</div>
+        <span class="kpi-change up">&#9650; 130.1%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">새 사용자 비율</div>
+        <div class="kpi-value">94%</div>
+        <span class="kpi-change up">&#9650; 7.5%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">사용자당 조회수</div>
+        <div class="kpi-value">2</div>
+        <span class="kpi-change up">&#9650; 24.4%</span>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">평균 세션 시간</div>
+        <div class="kpi-value">02:19</div>
+        <span class="kpi-change down">&#9660; -53.8%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insights (JS가 자동 생성) -->
+  <div class="section-card">
+    <div class="section-title"><span class="icon icon-orange">💡</span> 마케팅 인사이트</div>
+    <div class="insights-grid" id="insightsGrid"></div>
+  </div>
+
+  <!-- Ecommerce Hero -->
+  <div class="ecom-hero">
+    <div class="label">주요 이벤트 (Ecommerce)</div>
+    <div class="value">1,800</div>
+    <span class="kpi-change up" style="font-size:16px;">&#9650; 102.5% 증가</span>
+  </div>
+
+  <!-- Trend + Device Charts -->
+  <div class="section-card" style="padding:0 0 8px;">
+    <div style="padding:24px 32px 0;">
+      <div class="section-title"><span class="icon icon-blue">📉</span> 트래픽 트렌드</div>
+    </div>
+    <div class="charts-grid" style="padding:0 24px 16px;">
+      <div class="chart-card">
+        <h3>일별 세션수 / 활성 사용자 / 새 사용자</h3>
+        <canvas id="trendChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>디바이스 카테고리</h3>
+        <canvas id="deviceChart"></canvas>
+        <div class="donut-legend">
+          <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span> Mobile 69.7%</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--primary-light)"></span> Desktop 29.7%</div>
+          <div class="legend-item"><span class="legend-dot" style="background:var(--accent-purple)"></span> Tablet 0.6%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events + Country Charts -->
+  <div class="section-card" style="padding:0 0 8px;">
+    <div style="padding:24px 32px 0;">
+      <div class="section-title"><span class="icon icon-green">⚡</span> 이벤트 & 국가 분석</div>
+    </div>
+    <div class="two-col" style="padding:0 24px 16px;">
+      <div class="chart-card">
+        <h3>Top 이벤트</h3>
+        <canvas id="eventsChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>국가별 활성 사용자</h3>
+        <canvas id="countryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Traffic Sources -->
+  <div class="section-card" style="padding:0 0 8px;">
+    <div style="padding:24px 32px 0;">
+      <div class="section-title"><span class="icon icon-purple">🚦</span> 트래픽 소스 분석</div>
+    </div>
+    <div class="two-col" style="padding:0 24px 16px;">
+      <div class="chart-card">
+        <h3>유입 소스/매체별 주요 이벤트 (Ecommerce)</h3>
+        <canvas id="sourceChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>도시별 주요 이벤트 (Ecommerce)</h3>
+        <canvas id="cityChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Landing Pages Table -->
+  <div class="table-section">
+    <div class="section-title"><span class="icon icon-blue">📄</span> 랜딩 페이지 성과</div>
+    <table>
+      <thead>
+        <tr><th>페이지 경로</th><th>페이지명</th><th>세션수</th><th>세션 비중</th><th>이탈률</th><th>이탈률 시각화</th></tr>
+      </thead>
+      <tbody id="landingTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Page Views Table -->
+  <div class="table-section">
+    <div class="section-title"><span class="icon icon-green">👁</span> 페이지별 조회수</div>
+    <table>
+      <thead>
+        <tr><th>페이지 경로</th><th>페이지명</th><th>조회수</th><th>활성 사용자</th><th>조회수 비중</th></tr>
+      </thead>
+      <tbody id="pageViewTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Looker Studio 원본 대시보드 -->
+  <div class="section-card" style="padding-bottom:0;">
+    <div class="section-title" style="margin-bottom:12px;">
+      <span class="icon icon-blue">📊</span> Looker Studio 원본 현황
+      <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text-light);">페이지 열 때마다 자동 갱신</span>
+    </div>
+    <div style="border-radius:var(--radius-sm);overflow:hidden;height:640px;border:1px solid var(--border);">
+      <iframe id="lookerEmbedInline"
+        src="https://lookerstudio.google.com/embed/reporting/1303299e-7715-46c0-ae54-62558ba4fc18/page/p_v2rv9t3mcd"
+        style="width:100%;height:100%;border:0;"
+        allow="fullscreen"
+        frameborder="0"
+        loading="eager">
+      </iframe>
+    </div>
+    <p style="font-size:11px;color:var(--text-light);padding:10px 4px 16px;text-align:right;">
+      ※ Looker Studio 계정 로그인이 필요할 수 있습니다
+    </p>
+  </div>
+
+  <!-- Action Plan (JS가 자동 생성) -->
+  <div class="section-card">
+    <div class="section-title"><span class="icon icon-orange">📋</span> 마케팅 액션 플랜</div>
+    <div class="plan-grid" id="planGrid"></div>
+  </div>
+
+  <div class="dash-footer">
+    나눔경영컨설팅 마케팅 인사이트 대시보드 · 데이터 소스: Google Analytics 4 via Looker Studio<br>
+    <span id="lastUpdate">마지막 업데이트: 2026. 2. 26. 오후 7:47:33</span>
+  </div>
+</div>
+
+<!-- Overlay -->
+<div class="refresh-overlay" id="refreshOverlay">
+  <iframe id="lookerFrame" src="" allow="fullscreen"></iframe>
+  <button class="overlay-close" onclick="closeOverlay()">닫기 &amp; 데이터 확인 완료</button>
+</div>
+<div class="toast" id="toast">데이터가 새로고침 되었습니다</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// ⚙️  설정: 배포된 Google Apps Script 웹앱 URL을 아래에 붙여넣기
+//    (비워두면 이전 기간 데이터로 표시됩니다)
+// ═══════════════════════════════════════════════════════════════
+const APPS_SCRIPT_URL = ''; // 예: 'https://script.google.com/macros/s/ABC.../exec'
+
+// ─── 페이지명 매핑 ───────────────────────────────────────────
+const pageNames = {
+  '/':'홈', '/247':'B.center', '/248':'VP (가치제안)', '/257':'교육니즈 진단',
+  '/253':'E.Pitch', '/246':'VWE', '/255':'O.Sales', '/254':'I.Sales',
+  '/250':'경동나비엔', '/139':'무역실무', '/997':'일정', '/209':'은종성 강사',
+  '/239':'박혜랑 강사', '/186':'이인우 강사', '/78':'변화 혁신, 변화관리',
+  '/168':'ChatGPT 교육', '/3':'김종혁 대표', '/20/':'칼럼 | 글연재',
+  '/211/':'후기', '/259':'블로그 작성기', '/index':'인덱스'
+};
+function getPageName(p) { return pageNames[p] || pageNames[p.replace(/\/$/,'')] || p; }
+
+// ─── 폴백 데이터 (Apps Script URL 미설정 시 사용) ────────────
+const FALLBACK = {
+  dateRange: (function() {
+    const y = new Date(); y.setDate(y.getDate()-1);
+    const s = new Date(y); s.setDate(y.getDate()-6);
+    const y1=s.getFullYear(),m1=s.getMonth()+1,d1=s.getDate();
+    const y2=y.getFullYear(),m2=y.getMonth()+1,d2=y.getDate();
+    if(y1===y2&&m1===m2) return y1+'. '+m1+'. '+d1+'. ~ '+m2+'. '+d2+'.';
+    if(y1===y2) return y1+'. '+m1+'. '+d1+'. ~ '+m2+'. '+d2+'.';
+    return y1+'. '+m1+'. '+d1+'. ~ '+y2+'. '+m2+'. '+d2+'.';
+  })(),
+  kpi: { sessions:1200, activeUsers:1100, engagementRate:76, newUsers:1000,
+    newUserRate:94, viewsPerUser:2, avgSessionMin:2, avgSessionSec:19,
+    changes:{sessions:113.1,activeUsers:116.3,engagementRate:-12.9,
+             newUsers:130.1,viewsPerUser:24.4,avgSessionTime:-53.8} },
+  trend: { labels:['2/21','2/22','2/23','2/24','2/25','2/26','2/27'],
+    sessions:[60,40,80,110,650,280,110], active:[55,38,75,100,600,260,100], newU:[50,35,70,95,560,240,95] },
+  devices: { mobile:69.7, desktop:29.7, tablet:0.6 },
+  events: { labels:['scroll','all_click','page_view','generate_lead','session_start',
+    'first_visit','all_link_click','user_engagement','view_content','video_start'],
+    data:[2874,2407,2031,1237,1194,1008,727,568,503,367] },
+  countries: { labels:['South Korea','United States','China','Germany','Japan','Australia'],
+    data:[620,480,50,16,8,5] },
+  sources: { labels:['mail.google.com / referral','direct / (none)','l.facebook.com / referral'],
+    data:[980,720,100] },
+  cities: { labels:['Seoul','Daejeon','Ashburn','Busan','Paju-si','Cheonan-si','Goyang-si'],
+    data:[350,320,280,60,45,30,25] },
+  landingPages: [
+    {path:'/247',sessions:93,bounce:30.11},{path:'/257',sessions:91,bounce:37.36},
+    {path:'/248',sessions:81,bounce:33.33},{path:'/255',sessions:71,bounce:36.62},
+    {path:'/253',sessions:66,bounce:34.85},{path:'/246',sessions:66,bounce:36.36},
+    {path:'/254',sessions:55,bounce:30.91},{path:'/',sessions:50,bounce:34},
+    {path:'/3',sessions:10,bounce:10},{path:'/250',sessions:8,bounce:25}],
+  pageViews: [
+    {path:'/247',views:150,users:84},{path:'/248',views:130,users:84},
+    {path:'/246',views:116,users:73},{path:'/253',views:103,users:76},
+    {path:'/',views:100,users:56},{path:'/20/',views:99,users:86},
+    {path:'/255',views:93,users:76},{path:'/254',views:77,users:59},
+    {path:'/139',views:64,users:58},{path:'/3',views:50,users:33}],
+  ecom: { total:1237, change:102.5 }
+};
+
+// ─── Chart.js 기본 설정 ─────────────────────────────────────
+Chart.defaults.color = '#5A6070';
+Chart.defaults.borderColor = '#E2E8F0';
+Chart.defaults.font.family = "'Pretendard', sans-serif";
+
+// ─── 차트 인스턴스 ───────────────────────────────────────────
+let trendChartInst, deviceChartInst, eventsChartInst, countryChartInst, sourceChartInst, cityChartInst;
+
+function initCharts() {
+  trendChartInst = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{labels:[],datasets:[
+      {label:'세션수',data:[],borderColor:'#0066CC',backgroundColor:'rgba(0,102,204,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#0066CC'},
+      {label:'활성 사용자',data:[],borderColor:'#00A5E5',backgroundColor:'rgba(0,165,229,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#00A5E5'},
+      {label:'새 사용자',data:[],borderColor:'#db2777',backgroundColor:'rgba(219,39,119,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#db2777'}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+  });
+  deviceChartInst = new Chart(document.getElementById('deviceChart'), {
+    type:'doughnut',
+    data:{labels:['Mobile','Desktop','Tablet'],datasets:[{data:[0,0,0],backgroundColor:['#0066CC','#00A5E5','#7c3aed'],borderWidth:0}]},
+    options:{responsive:true,plugins:{legend:{display:false}},cutout:'65%'}
+  });
+  eventsChartInst = new Chart(document.getElementById('eventsChart'), {
+    type:'bar',
+    data:{labels:[],datasets:[{label:'이벤트 수',data:[],
+      backgroundColor:['#0066CC','#0077DD','#00A5E5','#00B67A','#0891b2','#7c3aed','#FF6B00','#db2777','#dc2626','#059669'],
+      borderRadius:4,barThickness:18}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+  });
+  countryChartInst = new Chart(document.getElementById('countryChart'), {
+    type:'bar',
+    data:{labels:[],datasets:[{label:'활성 사용자',data:[],backgroundColor:'#0066CC',borderRadius:4,barThickness:20}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+  });
+  sourceChartInst = new Chart(document.getElementById('sourceChart'), {
+    type:'bar',
+    data:{labels:[],datasets:[{label:'주요 이벤트',data:[],backgroundColor:['#00B67A','#0066CC','#db2777','#FF6B00','#7c3aed'],borderRadius:4,barThickness:28}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+  });
+  cityChartInst = new Chart(document.getElementById('cityChart'), {
+    type:'bar',
+    data:{labels:[],datasets:[{label:'주요 이벤트',data:[],backgroundColor:'#00A5E5',borderRadius:4,barThickness:20}]},
+    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+  });
+}
+
+// ─── JSONP: GA4 데이터 fetch ──────────────────────────────────
+function fetchGA4Data() {
+  return new Promise(function(resolve, reject) {
+    const cbName = '__ga4cb' + Date.now();
+    const timeout = setTimeout(function() {
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('데이터 로드 시간 초과'));
+    }, 20000);
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      if (data && data.error) reject(new Error(data.error));
+      else resolve(data);
+    };
+    const script = document.createElement('script');
+    script.onerror = function() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      reject(new Error('스크립트 로드 실패'));
+    };
+    script.src = APPS_SCRIPT_URL + '?callback=' + cbName + '&t=' + Date.now();
+    document.head.appendChild(script);
+  });
+}
+
+// ─── 전체 렌더링 ─────────────────────────────────────────────
+function renderAll(data) {
+  // 날짜
+  document.getElementById('dateRange').textContent = data.dateRange;
+
+  // KPI
+  const k = data.kpi;
+  const kpiVals = [
+    {v: k.sessions.toLocaleString(),    c: k.changes.sessions},
+    {v: k.activeUsers.toLocaleString(), c: k.changes.activeUsers},
+    {v: k.engagementRate + '%',         c: k.changes.engagementRate},
+    {v: k.newUsers.toLocaleString(),    c: k.changes.newUsers},
+    {v: k.newUserRate + '%',            c: 0},
+    {v: String(k.viewsPerUser),         c: k.changes.viewsPerUser},
+    {v: String(k.avgSessionMin).padStart(2,'0') + ':' + String(k.avgSessionSec).padStart(2,'0'),
+     c: k.changes.avgSessionTime}
+  ];
+  document.querySelectorAll('.kpi-card').forEach(function(card, i) {
+    if (!kpiVals[i]) return;
+    card.querySelector('.kpi-value').textContent = kpiVals[i].v;
+    const el = card.querySelector('.kpi-change');
+    const up = kpiVals[i].c >= 0;
+    el.className = 'kpi-change ' + (up ? 'up' : 'down');
+    el.innerHTML = (up ? '&#9650; ' : '&#9660; ') + Math.abs(kpiVals[i].c) + '%';
+  });
+
+  // Ecommerce
+  document.querySelector('.ecom-hero .value').textContent = data.ecom.total.toLocaleString();
+  const eu = data.ecom.change >= 0;
+  document.querySelector('.ecom-hero .kpi-change').innerHTML =
+    (eu ? '&#9650; ' : '&#9660; ') + Math.abs(data.ecom.change) + '% ' + (eu ? '증가' : '감소');
+
+  // 트렌드 차트
+  trendChartInst.data.labels = data.trend.labels;
+  trendChartInst.data.datasets[0].data = data.trend.sessions;
+  trendChartInst.data.datasets[1].data = data.trend.active;
+  trendChartInst.data.datasets[2].data = data.trend.newU;
+  trendChartInst.update();
+
+  // 디바이스 차트
+  deviceChartInst.data.datasets[0].data = [data.devices.mobile, data.devices.desktop, data.devices.tablet];
+  deviceChartInst.update();
+  var legs = document.querySelectorAll('.donut-legend .legend-item');
+  if (legs[0]) legs[0].innerHTML = '<span class="legend-dot" style="background:var(--primary)"></span> Mobile ' + data.devices.mobile + '%';
+  if (legs[1]) legs[1].innerHTML = '<span class="legend-dot" style="background:var(--primary-light)"></span> Desktop ' + data.devices.desktop + '%';
+  if (legs[2]) legs[2].innerHTML = '<span class="legend-dot" style="background:var(--accent-purple)"></span> Tablet ' + data.devices.tablet + '%';
+
+  // 이벤트·국가·소스·도시 차트
+  eventsChartInst.data.labels = data.events.labels;
+  eventsChartInst.data.datasets[0].data = data.events.data;
+  eventsChartInst.update();
+
+  countryChartInst.data.labels = data.countries.labels;
+  countryChartInst.data.datasets[0].data = data.countries.data;
+  countryChartInst.update();
+
+  sourceChartInst.data.labels = data.sources.labels;
+  sourceChartInst.data.datasets[0].data = data.sources.data;
+  sourceChartInst.update();
+
+  cityChartInst.data.labels = data.cities.labels;
+  cityChartInst.data.datasets[0].data = data.cities.data;
+  cityChartInst.update();
+
+  // 테이블
+  renderLandingTable(data.landingPages);
+  renderPageViewTable(data.pageViews);
+
+  // 인사이트 & 액션플랜 자동 생성
+  renderInsights(buildInsights(data));
+  renderActionPlan(buildActionPlan(data));
+
+  updateTimestamp();
+}
+
+// ─── 테이블 렌더링 ───────────────────────────────────────────
+function renderLandingTable(pages) {
+  var total = pages.reduce(function(s,p){return s+p.sessions;},0);
+  var tb = document.getElementById('landingTableBody');
+  tb.innerHTML = '';
+  pages.forEach(function(p) {
+    var pct = total>0 ? ((p.sessions/total)*100).toFixed(1) : '0.0';
+    var bc = p.bounce>35?'var(--accent-red)':p.bounce>30?'var(--accent-orange)':'var(--accent-green)';
+    var bw = Math.min(100,(p.bounce/40)*100);
+    tb.innerHTML += '<tr><td>'+p.path+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
+      '<td><strong>'+p.sessions+'</strong></td>' +
+      '<td><div class="bar-cell"><div class="bar" style="width:'+(pct*2.5)+'px"></div>'+pct+'%</div></td>' +
+      '<td>'+p.bounce+'%</td>' +
+      '<td><div class="bar-cell"><div class="bounce-bar" style="width:'+bw+'px;background:'+bc+'"></div></div></td></tr>';
+  });
+}
+
+function renderPageViewTable(pages) {
+  var total = pages.reduce(function(s,p){return s+p.views;},0);
+  var tb = document.getElementById('pageViewTableBody');
+  tb.innerHTML = '';
+  pages.forEach(function(p) {
+    var pct = total>0 ? ((p.views/total)*100).toFixed(1) : '0.0';
+    tb.innerHTML += '<tr><td>'+p.path+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
+      '<td><strong>'+p.views+'</strong></td><td>'+p.users+'</td>' +
+      '<td><div class="bar-cell"><div class="bar" style="width:'+(pct*3)+'px"></div>'+pct+'%</div></td></tr>';
+  });
+}
+
+// ─── 인사이트 자동 생성 ──────────────────────────────────────
+function buildInsights(d) {
+  var ins = [], k = d.kpi, totalEvt = d.events.data.reduce(function(s,v){return s+v;},0);
+
+  // 트래픽 변화
+  if (k.changes.sessions > 30) {
+    ins.push({icon:'🚀',type:'growth',title:'트래픽 '+(k.changes.sessions>100?'폭증':'급증')+' - 주요 채널 효과',
+      body:'세션수 <strong>+'+ k.changes.sessions+'%</strong>, 새 사용자 <strong>+'+k.changes.newUsers+'%</strong> 증가. 주요 유입 소스: <strong>'+(d.sources.labels[0]||'직접 유입')+'</strong>.'});
+  } else if (k.changes.sessions < -20) {
+    ins.push({icon:'📉',type:'warning',title:'트래픽 감소 주의',
+      body:'세션수 <strong>'+k.changes.sessions+'%</strong> 감소. 유입 채널 점검 및 콘텐츠 강화가 필요합니다.'});
+  } else {
+    ins.push({icon:'📊',type:'info',title:'트래픽 안정적 유지',
+      body:'세션수 변화 <strong>'+k.changes.sessions+'%</strong>로 안정적 흐름을 유지하고 있습니다.'});
+  }
+
+  // 참여 품질
+  if (k.changes.engagementRate < -10 || k.changes.avgSessionTime < -30) {
+    ins.push({icon:'⚠️',type:'warning',title:'참여율 하락 & 세션 시간 감소 주의',
+      body:'참여율 변화 <strong>'+k.changes.engagementRate+'%</strong>, 평균 세션 시간 <strong>'+k.changes.avgSessionTime+'%</strong>. 랜딩페이지 최적화와 CTA 강화가 필요합니다.'});
+  } else {
+    ins.push({icon:'✅',type:'growth',title:'참여 품질 양호',
+      body:'참여율 <strong>'+k.engagementRate+'%</strong>로 방문자가 콘텐츠에 적극적으로 반응하고 있습니다.'});
+  }
+
+  // 모바일
+  if (d.devices.mobile > 55) {
+    ins.push({icon:'📱',type:'info',title:'모바일 퍼스트 전략 필수',
+      body:'전체 트래픽의 <strong>'+d.devices.mobile+'%가 모바일</strong>에서 유입. 모바일 UX 최적화, 빠른 로딩, 터치 친화적 CTA가 전환율 향상의 핵심입니다.'});
+  }
+
+  // generate_lead
+  var glIdx = d.events.labels.indexOf('generate_lead');
+  if (glIdx >= 0 && totalEvt > 0) {
+    var glCnt = d.events.data[glIdx];
+    var glPct = ((glCnt/totalEvt)*100).toFixed(1);
+    ins.push({icon:'🎯',type:'strategy',title:'리드 생성 전략 - 웹앱 페이지 집중',
+      body:'<strong>generate_lead '+glCnt.toLocaleString()+'건</strong>(전체 이벤트의 '+glPct+'%). 이메일 → 웹앱 → 리드 전환 퍼널이 핵심 성과 경로입니다.'});
+  }
+
+  // 이메일 소스
+  var emailSrc = d.sources.labels.find(function(l){return l.includes('mail')||l.includes('email');});
+  if (emailSrc) {
+    ins.push({icon:'📧',type:'strategy',title:'이메일 마케팅 ROI 극대화',
+      body:'<strong>'+emailSrc+'</strong> 트래픽이 핵심 전환 소스. 세분화된 이메일 리스트와 개인화 콘텐츠로 전환율을 더 높일 수 있습니다.'});
+  }
+
+  // 해외 트래픽
+  var krIdx = d.countries.labels.indexOf('South Korea');
+  var totalCU = d.countries.data.reduce(function(s,v){return s+v;},0);
+  var krU = krIdx>=0 ? d.countries.data[krIdx] : 0;
+  if (totalCU > 0 && (totalCU-krU)/totalCU > 0.15) {
+    var ov = d.countries.labels.filter(function(_,i){return i!==krIdx;}).slice(0,3).join(', ');
+    ins.push({icon:'🌐',type:'info',title:'해외 트래픽 증가',
+      body:'한국 외 <strong>'+ov+'</strong>에서 상당한 트래픽 발생. 실제 해외 잠재고객을 위한 영어 콘텐츠 강화를 고려하세요.'});
+  }
+
+  while (ins.length < 3) {
+    ins.push({icon:'💡',type:'info',title:'데이터 수집 중',body:'더 많은 데이터가 수집되면 맞춤 인사이트가 자동 생성됩니다.'});
+  }
+  return ins.slice(0,6);
+}
+
+function renderInsights(list) {
+  var el = document.getElementById('insightsGrid');
+  if (!el) return;
+  el.innerHTML = '';
+  list.forEach(function(ins) {
+    el.innerHTML += '<div class="insight-card"><div class="insight-header">' +
+      '<div class="insight-icon '+ins.type+'">'+ins.icon+'</div>' +
+      '<div class="insight-title">'+ins.title+'</div></div>' +
+      '<div class="insight-body">'+ins.body+'</div></div>';
+  });
+}
+
+// ─── 액션플랜 자동 생성 ──────────────────────────────────────
+function buildActionPlan(d) {
+  var k = d.kpi;
+  var topSrc = d.sources.labels[0] || '이메일';
+  var isEmail = topSrc.includes('mail') || topSrc.includes('email');
+  var hb = d.landingPages.slice().sort(function(a,b){return b.bounce-a.bounce;})[0];
+  var avgT = String(k.avgSessionMin).padStart(2,'0') + ':' + String(k.avgSessionSec).padStart(2,'0');
+  return [
+    {title:'1. '+(isEmail?'이메일':'주요 채널')+' 캠페인 강화',
+     body:'<strong>'+topSrc+'</strong>이 핵심 전환 채널. 주 2~3회 뉴스레터 발송, A/B 테스트로 제목 최적화. 웹앱 관련 페이지(B.center, VP, E.Pitch)로 직접 링크 포함.'},
+    {title:'2. 랜딩 페이지 최적화',
+     body:(hb?'이탈률 최고: <strong>'+hb.path+' ('+hb.bounce+'%)</strong>. ':'')+' CTA 버튼 강화, 로딩 속도 개선, 모바일 최적화 필요.'},
+    {title:'3. 콘텐츠 체류시간 증대',
+     body:'평균 세션 시간 <strong>'+avgT+'</strong>'+(k.changes.avgSessionTime<0?' (하락 추세)':'')+'. 인터랙티브 콘텐츠, 동영상 삽입, 관련 교육과정 추천으로 체류시간 증대.'},
+    {title:'4. 소셜미디어 채널 확대',
+     body:(d.devices.mobile>60?'모바일 유입 <strong>'+d.devices.mobile+'%</strong>. ':'')+'LinkedIn B2B 타겟 광고, 인스타그램 교육 후기, 네이버 블로그 SEO 강화로 다각화된 채널 확보.'}
+  ];
+}
+
+function renderActionPlan(plans) {
+  var el = document.getElementById('planGrid');
+  if (!el) return;
+  el.innerHTML = '';
+  plans.forEach(function(p) {
+    el.innerHTML += '<div class="plan-card"><h4>'+p.title+'</h4><p>'+p.body+'</p></div>';
+  });
+}
+
+// ─── 로딩 표시 ───────────────────────────────────────────────
+function showLoading(show) {
+  var bar = document.getElementById('loadingBar');
+  if (bar) bar.style.display = show ? 'flex' : 'none';
+}
+
+// ─── 타임스탬프 ──────────────────────────────────────────────
+function updateTimestamp() {
+  var now = new Date();
+  var h = now.getHours(), m = now.getMinutes(), s = now.getSeconds();
+  var ampm = h >= 12 ? '오후' : '오전';
+  var h12 = h > 12 ? h-12 : h === 0 ? 12 : h;
+  document.getElementById('lastUpdate').textContent =
+    '마지막 업데이트: '+now.getFullYear()+'. '+(now.getMonth()+1)+'. '+now.getDate()+'. '+ampm+' '+h12+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function showToast() {
+  var toast = document.getElementById('toast');
+  toast.classList.add('show');
+  setTimeout(function(){toast.classList.remove('show');}, 3000);
+}
+
+// ─── 새로고침 버튼 ───────────────────────────────────────────
+function refreshData() {
+  var btn = document.querySelector('.refresh-btn');
+  btn.classList.add('loading');
+  // Looker iframe 갱신
+  var fr = document.getElementById('lookerEmbedInline');
+  if (fr) { var src=fr.getAttribute('src'); fr.src=''; setTimeout(function(){fr.src=src;},80); }
+
+  if (APPS_SCRIPT_URL) {
+    showLoading(true);
+    fetchGA4Data().then(function(data){ renderAll(data); showToast(); })
+      .catch(function(e){ console.warn('GA4 실패:', e.message); renderAll(FALLBACK); showToast(); })
+      .finally(function(){ showLoading(false); btn.classList.remove('loading'); });
+  } else {
+    renderAll(FALLBACK);
+    updateTimestamp();
+    setTimeout(function(){ btn.classList.remove('loading'); showToast(); }, 400);
+  }
+}
+
+function closeOverlay() {
+  document.getElementById('refreshOverlay').classList.remove('active');
+  document.getElementById('lookerFrame').src = '';
+}
+
+// ─── 페이지 로드 시 자동 실행 ────────────────────────────────
+(function init() {
+  initCharts();
+  if (APPS_SCRIPT_URL) {
+    showLoading(true);
+    fetchGA4Data()
+      .then(function(data){ renderAll(data); })
+      .catch(function(e){ console.warn('GA4 데이터 로드 실패, 폴백 사용:', e.message); renderAll(FALLBACK); })
+      .finally(function(){ showLoading(false); });
+  } else {
+    renderAll(FALLBACK);
+  }
+})();
+</script>
+</body>
+</html>
