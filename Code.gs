@@ -18,6 +18,35 @@
  */
 
 const GA4_PROPERTY_ID = '302777380';
+const SITE_URL = 'https://nanumcon.com';
+
+// 페이지 제목 가져오기
+function fetchPageTitle(path) {
+  try {
+    var url = SITE_URL + path;
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    if (resp.getResponseCode() !== 200) return '';
+    var html = resp.getContentText();
+    var match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    if (match && match[1]) {
+      var title = match[1].trim();
+      // "제목 - 사이트명" 형식에서 사이트명 제거
+      title = title.replace(/\s*[-|]\s*나눔경영컨설팅.*$/i, '').trim();
+      return title || '';
+    }
+  } catch(e) {}
+  return '';
+}
+
+function fetchPageTitles(paths) {
+  var titles = {};
+  paths.forEach(function(p) {
+    if (!p || p === '/') { titles[p] = '홈'; return; }
+    var t = fetchPageTitle(p);
+    if (t) titles[p] = t;
+  });
+  return titles;
+}
 
 // ─── 웹앱 진입점 ───────────────────────────────────────────────
 function doGet(e) {
@@ -167,13 +196,13 @@ function fetchAllGA4Data() {
     countries.data.push(parseInt(row.metricValues[0].value));
   });
 
-  // ── 6. 트래픽 소스 Top 5 ─────────────────────────────────────
+  // ── 6. 트래픽 소스 Top 10 ────────────────────────────────────
   const srcResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
     dimensions: [{ name: 'sessionSourceMedium' }],
     metrics: [{ name: 'eventCount' }],
     orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
-    limit: 5
+    limit: 10
   }, prop);
 
   const sources = { labels: [], data: [] };
@@ -218,13 +247,13 @@ function fetchAllGA4Data() {
     });
   });
 
-  // ── 9. 페이지뷰 Top 15 ───────────────────────────────────────
+  // ── 9. 페이지뷰 Top 20 ───────────────────────────────────────
   const pvResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
     dimensions: [{ name: 'pagePath' }],
     metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
     orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-    limit: 15
+    limit: 20
   }, prop);
 
   const pageViews = [];
@@ -344,6 +373,13 @@ function fetchAllGA4Data() {
   else if (y1 === y2)          dateRangeStr = y1 + '. ' + m1 + '. ' + d1 + '. ~ ' + m2 + '. ' + d2 + '.';
   else                         dateRangeStr = y1 + '. ' + m1 + '. ' + d1 + '. ~ ' + y2 + '. ' + m2 + '. ' + d2 + '.';
 
+  // ── 페이지 제목 크롤링 ──────────────────────────────────────
+  var allPaths = [];
+  pageViews.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
+  landingPages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
+  highBouncePages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
+  var pageTitles = fetchPageTitles(allPaths);
+
   return {
     dateRange:   dateRangeStr,
     kpi:         kpi,
@@ -359,6 +395,7 @@ function fetchAllGA4Data() {
     hourly:      hourly,
     searchTerms: searchTerms,
     newVsReturning: newVsReturning,
-    highBouncePages: highBouncePages
+    highBouncePages: highBouncePages,
+    pageTitles:  pageTitles
   };
 }

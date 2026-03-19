@@ -328,7 +328,7 @@ tr:hover td { background: #f0f4f8; }
   <!-- 2. 최근 1주 방문자 & 페이지뷰 추이 -->
   <div class="section-card">
     <div class="section-title"><span class="icon icon-blue">📉</span> 최근 1주 방문자 &amp; 페이지뷰 추이</div>
-    <canvas id="trendChart"></canvas>
+    <div style="height:280px;"><canvas id="trendChart"></canvas></div>
   </div>
 
   <!-- 3. 시간대별 방문 분석 | 기기별 분포 -->
@@ -339,7 +339,7 @@ tr:hover td { background: #f0f4f8; }
     </div>
     <div class="chart-card">
       <h3>기기별 분포</h3>
-      <canvas id="deviceChart"></canvas>
+      <div style="max-width:200px;margin:0 auto;"><canvas id="deviceChart"></canvas></div>
       <div class="donut-legend" id="deviceLegend">
         <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span> Mobile 0%</div>
         <div class="legend-item"><span class="legend-dot" style="background:var(--primary-light)"></span> Desktop 0%</div>
@@ -350,7 +350,7 @@ tr:hover td { background: #f0f4f8; }
 
   <!-- 4. 많이 방문한 페이지 Top 10 -->
   <div class="table-section">
-    <div class="section-title"><span class="icon icon-green">👁</span> 많이 방문한 페이지 Top 10</div>
+    <div class="section-title"><span class="icon icon-green">👁</span> 많이 방문한 페이지 Top 20</div>
     <table>
       <thead>
         <tr><th>#</th><th>페이지</th><th>조회수</th><th>사용자</th><th>비율</th></tr>
@@ -367,7 +367,7 @@ tr:hover td { background: #f0f4f8; }
     </div>
     <div class="chart-card">
       <h3>신규 vs 재방문자</h3>
-      <canvas id="nvrChart"></canvas>
+      <div style="max-width:200px;margin:0 auto;"><canvas id="nvrChart"></canvas></div>
       <div class="donut-legend" id="nvrLegend">
         <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span> 신규 0%</div>
         <div class="legend-item"><span class="legend-dot" style="background:var(--accent-orange)"></span> 재방문 0%</div>
@@ -403,37 +403,12 @@ tr:hover td { background: #f0f4f8; }
     </table>
   </div>
 
-  <!-- 8. Looker Studio Embed -->
-  <div class="section-card" style="padding-bottom:0;">
-    <div class="section-title" style="margin-bottom:12px;">
-      <span class="icon icon-blue">📊</span> Looker Studio 원본 현황
-      <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text-light);">페이지 열 때마다 자동 갱신</span>
-    </div>
-    <div style="border-radius:var(--radius-sm);overflow:hidden;height:640px;border:1px solid var(--border);">
-      <iframe id="lookerEmbedInline"
-        src="https://lookerstudio.google.com/embed/reporting/1303299e-7715-46c0-ae54-62558ba4fc18/page/p_v2rv9t3mcd"
-        style="width:100%;height:100%;border:0;"
-        allow="fullscreen"
-        frameborder="0"
-        loading="eager">
-      </iframe>
-    </div>
-    <p style="font-size:11px;color:var(--text-light);padding:10px 4px 16px;text-align:right;">
-      ※ Looker Studio 계정 로그인이 필요할 수 있습니다
-    </p>
-  </div>
-
   <div class="dash-footer">
     나눔경영컨설팅 마케팅 인사이트 대시보드 · 데이터 소스: Google Analytics 4 via Looker Studio<br>
     <span id="lastUpdate">마지막 업데이트: -</span>
   </div>
 </div>
 
-<!-- Overlay -->
-<div class="refresh-overlay" id="refreshOverlay">
-  <iframe id="lookerFrame" src="" allow="fullscreen"></iframe>
-  <button class="overlay-close" onclick="closeOverlay()">닫기 &amp; 데이터 확인 완료</button>
-</div>
 <div class="toast" id="toast">데이터가 새로고침 되었습니다</div>
 
 <script>
@@ -451,7 +426,10 @@ const pageNames = {
   '/168':'ChatGPT 교육', '/3':'김종혁 대표', '/20/':'칼럼 | 글연재',
   '/211/':'후기', '/259':'블로그 작성기', '/index':'인덱스'
 };
-function getPageName(p) { return pageNames[p] || pageNames[p.replace(/\/$/,'')] || p; }
+var serverPageTitles = {};
+function getPageName(p) {
+  return serverPageTitles[p] || pageNames[p] || pageNames[p.replace(/\/$/,'')] || p;
+}
 
 // 폴백 데이터
 const FALLBACK = {
@@ -536,7 +514,7 @@ function initCharts() {
       {label:'활성 사용자',data:[],borderColor:'#0891b2',backgroundColor:'rgba(8,145,178,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#0891b2',borderWidth:2},
       {label:'페이지뷰',data:[],borderColor:'#FF6B00',backgroundColor:'rgba(255,107,0,0.08)',fill:true,tension:0.4,pointRadius:4,pointBackgroundColor:'#FF6B00',borderWidth:2}
     ]},
-    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
   });
 
   // 시간대별 방문
@@ -604,6 +582,8 @@ function fetchGA4Data() {
 
 // 전체 렌더링
 function renderAll(data) {
+  // 서버에서 받은 페이지 제목 적용
+  if (data.pageTitles) serverPageTitles = data.pageTitles;
   // 날짜
   document.getElementById('dateRange').textContent = data.dateRange;
 
@@ -688,7 +668,7 @@ function renderPageViewTable(pages) {
   var total = pages.reduce(function(s,p){return s+p.views;},0);
   var tb = document.getElementById('pageViewTableBody');
   tb.innerHTML = '';
-  pages.slice(0,10).forEach(function(p, i) {
+  pages.slice(0,20).forEach(function(p, i) {
     var pct = total > 0 ? ((p.views/total)*100).toFixed(1) : '0.0';
     tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
       '<td><strong>'+p.views+'</strong></td><td>'+p.users+'</td>' +
@@ -756,10 +736,6 @@ function showToast() {
 function refreshData() {
   var btn = document.querySelector('.refresh-btn');
   btn.classList.add('loading');
-  // Looker iframe 갱신
-  var fr = document.getElementById('lookerEmbedInline');
-  if (fr) { var src=fr.getAttribute('src'); fr.src=''; setTimeout(function(){fr.src=src;},80); }
-
   if (APPS_SCRIPT_URL) {
     showLoading(true);
     fetchGA4Data().then(function(data){ renderAll(data); showToast(); })
@@ -770,11 +746,6 @@ function refreshData() {
     updateTimestamp();
     setTimeout(function(){ btn.classList.remove('loading'); showToast(); }, 400);
   }
-}
-
-function closeOverlay() {
-  document.getElementById('refreshOverlay').classList.remove('active');
-  document.getElementById('lookerFrame').src = '';
 }
 
 // 페이지 로드 시 자동 실행
