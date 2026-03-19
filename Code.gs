@@ -73,6 +73,11 @@ function fetchAllGA4Data() {
   const curr = { startDate: '7daysAgo', endDate: 'yesterday' };
   const prev = { startDate: '14daysAgo', endDate: '8daysAgo' };
 
+  // 날짜 객체 (Search Console 등에서 사용)
+  const now  = new Date();
+  const yest = new Date(now); yest.setDate(now.getDate() - 1);
+  const s7   = new Date(yest); s7.setDate(yest.getDate() - 6);
+
   // ── 1. KPI (현재 기간 + 이전 기간 비교) ──────────────────────
   const kpiResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr, prev],
@@ -305,23 +310,26 @@ function fetchAllGA4Data() {
     hourly.activeUsers[hi] = parseInt(row.metricValues[1].value);
   });
 
-  // ── 12. 검색어 Top 15 ─────────────────────────────────────────
+  // ── 12. 검색어 Top 20 (Google Search Console API) ────────────
   var searchTerms = [];
   try {
-    const stResp = AnalyticsData.Properties.runReport({
-      dateRanges: [curr],
-      dimensions: [{ name: 'sessionManualTerm' }],
-      metrics: [{ name: 'sessions' }],
-      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
-      limit: 15
-    }, prop);
-    (stResp.rows || []).forEach(function(row) {
-      var term = row.dimensionValues[0].value;
-      if (term && term !== '(not set)' && term !== '(not provided)') {
-        searchTerms.push({ term: term, sessions: parseInt(row.metricValues[0].value) });
-      }
+    var scResp = SearchConsole.Searchanalytics.query({
+      startDate: Utilities.formatDate(s7, 'Asia/Seoul', 'yyyy-MM-dd'),
+      endDate: Utilities.formatDate(yest, 'Asia/Seoul', 'yyyy-MM-dd'),
+      dimensions: ['query'],
+      rowLimit: 20,
+      dataState: 'all'
+    }, 'https://nanumcon.com/');
+    (scResp.rows || []).forEach(function(row) {
+      searchTerms.push({
+        term: row.keys[0],
+        clicks: row.clicks || 0,
+        impressions: row.impressions || 0,
+        ctr: Math.round((row.ctr || 0) * 1000) / 10,
+        position: Math.round((row.position || 0) * 10) / 10
+      });
     });
-  } catch(e) { /* searchTerm 미지원 시 빈 배열 */ }
+  } catch(e) { /* Search Console 미연동 시 빈 배열 */ }
 
   // ── 13. 신규 vs 재방문자 ──────────────────────────────────────
   const nvrResp = AnalyticsData.Properties.runReport({
@@ -368,9 +376,6 @@ function fetchAllGA4Data() {
   });
 
   // ── 날짜 범위 문자열 ──────────────────────────────────────────
-  const now  = new Date();
-  const yest = new Date(now); yest.setDate(now.getDate() - 1);
-  const s7   = new Date(yest); s7.setDate(yest.getDate() - 6);
   const y1 = s7.getFullYear(), m1 = s7.getMonth() + 1, d1 = s7.getDate();
   const y2 = yest.getFullYear(), m2 = yest.getMonth() + 1, d2 = yest.getDate();
   let dateRangeStr;

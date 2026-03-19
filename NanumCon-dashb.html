@@ -383,9 +383,9 @@ tr:hover td { background: #f0f4f8; }
 
   <!-- 6. 유입 검색어 -->
   <div class="table-section">
-    <div class="section-title"><span class="icon icon-purple">🔍</span> 유입 검색어</div>
+    <div class="section-title"><span class="icon icon-purple">🔍</span> 유입 검색어 Top 20 <span style="font-size:11px;font-weight:400;color:var(--text-light);">(Google Search Console)</span></div>
     <table>
-      <thead><tr><th>#</th><th>검색어</th><th>세션수</th></tr></thead>
+      <thead><tr><th>#</th><th>검색어</th><th>클릭수</th><th>노출수</th><th>CTR</th><th>평균순위</th></tr></thead>
       <tbody id="searchTermsBody"></tbody>
     </table>
   </div>
@@ -498,11 +498,11 @@ const FALLBACK = {
     {path:'/139',views:64,users:58},{path:'/3',views:50,users:33}
   ],
   searchTerms: [
-    {term:'B2B마케팅', sessions:15},
-    {term:'나눔경영컨설팅', sessions:12},
-    {term:'세일즈교육', sessions:8},
-    {term:'영업교육', sessions:6},
-    {term:'ChatGPT 교육', sessions:4}
+    {term:'B2B마케팅', clicks:15, impressions:200, ctr:7.5, position:5.2},
+    {term:'나눔경영컨설팅', clicks:12, impressions:80, ctr:15.0, position:1.3},
+    {term:'세일즈교육', clicks:8, impressions:150, ctr:5.3, position:8.1},
+    {term:'영업교육', clicks:6, impressions:120, ctr:5.0, position:12.4},
+    {term:'ChatGPT 교육', clicks:4, impressions:300, ctr:1.3, position:15.7}
   ],
   newVsReturning: { newPct:85, returningPct:15 },
   dwellTimePages: [
@@ -703,17 +703,22 @@ function renderPageViewTable(pages) {
   });
 }
 
-// 검색어 테이블
+// 검색어 테이블 (Search Console)
 function renderSearchTerms(terms) {
   var tb = document.getElementById('searchTermsBody');
   if (!tb) return;
   tb.innerHTML = '';
   if (!terms || !terms.length) {
-    tb.innerHTML = '<tr><td colspan="3" class="empty-msg">검색어 데이터가 없습니다</td></tr>';
+    tb.innerHTML = '<tr><td colspan="6" class="empty-msg">검색어 데이터가 없습니다</td></tr>';
     return;
   }
   terms.forEach(function(t, i) {
-    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td><strong>'+t.term+'</strong></td><td>'+t.sessions+'</td></tr>';
+    var clicks = t.clicks !== undefined ? t.clicks : t.sessions || 0;
+    var impressions = t.impressions || '-';
+    var ctr = t.ctr !== undefined ? t.ctr + '%' : '-';
+    var position = t.position || '-';
+    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td><strong>'+t.term+'</strong></td>' +
+      '<td>'+clicks+'</td><td>'+impressions+'</td><td>'+ctr+'</td><td>'+position+'</td></tr>';
   });
 }
 
