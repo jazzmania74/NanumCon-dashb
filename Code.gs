@@ -414,3 +414,29 @@ function fetchAllGA4Data() {
     pageTitles:  pageTitles
   };
 }
+
+// ─── Search Console 테스트 ──────────────────────────────────
+function testSearchConsole() {
+  var now = new Date();
+  var yest = new Date(now); yest.setDate(now.getDate() - 1);
+  var s7 = new Date(yest); s7.setDate(yest.getDate() - 6);
+
+  var scUrl = 'https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fnanumcon.com%2F/searchAnalytics/query';
+  var scPayload = {
+    startDate: Utilities.formatDate(s7, 'Asia/Seoul', 'yyyy-MM-dd'),
+    endDate: Utilities.formatDate(yest, 'Asia/Seoul', 'yyyy-MM-dd'),
+    dimensions: ['query'],
+    rowLimit: 5
+  };
+
+  var resp = UrlFetchApp.fetch(scUrl, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() },
+    payload: JSON.stringify(scPayload),
+    muteHttpExceptions: true
+  });
+
+  Logger.log('Status: ' + resp.getResponseCode());
+  Logger.log('Response: ' + resp.getContentText());
+}
