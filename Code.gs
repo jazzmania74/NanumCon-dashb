@@ -310,17 +310,26 @@ function fetchAllGA4Data() {
     hourly.activeUsers[hi] = parseInt(row.metricValues[1].value);
   });
 
-  // ── 12. 검색어 Top 20 (Google Search Console API) ────────────
+  // ── 12. 검색어 Top 20 (Google Search Console API via UrlFetchApp) ──
   var searchTerms = [];
   try {
-    var scResp = SearchConsole.Searchanalytics.query({
+    var scUrl = 'https://www.googleapis.com/webmasters/v3/sites/https%3A%2F%2Fnanumcon.com%2F/searchAnalytics/query';
+    var scPayload = {
       startDate: Utilities.formatDate(s7, 'Asia/Seoul', 'yyyy-MM-dd'),
       endDate: Utilities.formatDate(yest, 'Asia/Seoul', 'yyyy-MM-dd'),
       dimensions: ['query'],
       rowLimit: 20,
       dataState: 'all'
-    }, 'https://nanumcon.com/');
-    (scResp.rows || []).forEach(function(row) {
+    };
+    var scResp = UrlFetchApp.fetch(scUrl, {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { 'Authorization': 'Bearer ' + ScriptApp.getOAuthToken() },
+      payload: JSON.stringify(scPayload),
+      muteHttpExceptions: true
+    });
+    var scData = JSON.parse(scResp.getContentText());
+    (scData.rows || []).forEach(function(row) {
       searchTerms.push({
         term: row.keys[0],
         clicks: row.clicks || 0,
