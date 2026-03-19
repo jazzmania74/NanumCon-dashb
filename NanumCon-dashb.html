@@ -383,7 +383,10 @@ tr:hover td { background: #f0f4f8; }
 
   <!-- 6. 유입 검색어 -->
   <div class="table-section">
-    <div class="section-title"><span class="icon icon-purple">🔍</span> 유입 검색어 Top 20 <span style="font-size:11px;font-weight:400;color:var(--text-light);">(Google Search Console)</span></div>
+    <div class="section-title" style="flex-wrap:wrap;gap:8px;">
+      <span><span class="icon icon-purple">🔍</span> 유입 검색어 Top 20 <span style="font-size:11px;font-weight:400;color:var(--text-light);">(Google Search Console)</span></span>
+      <a href="https://searchadvisor.naver.com/console/board" target="_blank" style="margin-left:auto;padding:6px 14px;background:#03C75A;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">🔗 네이버 Search Advisor</a>
+    </div>
     <table>
       <thead><tr><th>#</th><th>검색어</th><th>클릭수</th><th>노출수</th><th>CTR</th><th>평균순위</th></tr></thead>
       <tbody id="searchTermsBody"></tbody>
