@@ -766,7 +766,23 @@ function generateAIInsight() {
   var btn = document.getElementById('aiInsightBtn');
   var content = document.getElementById('aiInsightContent');
   btn.disabled = true; btn.textContent = '🧠 분석 중...';
-  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);"><div style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>AI가 데이터를 분석하고 있습니다...</div>';
+  var progHtml = '<div style="padding:24px 0;">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+    '<span style="font-size:13px;font-weight:600;color:var(--text-secondary);">🧠 AI 분석 중...</span>' +
+    '<span id="aiPct" style="font-size:12px;color:var(--primary);font-weight:700;">0%</span></div>' +
+    '<div style="width:100%;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;">' +
+    '<div id="aiBar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-light));border-radius:4px;transition:width 0.3s;"></div></div>' +
+    '<div id="aiStep" style="font-size:12px;color:var(--text-light);margin-top:6px;">데이터 수집 중...</div></div>';
+  content.innerHTML = progHtml;
+  var aiProg = 0;
+  var aiSteps = ['데이터 수집 중...','KPI 분석 중...','유입 채널 분석 중...','검색어 패턴 분석 중...','SEO 전략 수립 중...','액션 플랜 생성 중...'];
+  var aiTimer = setInterval(function() {
+    if (aiProg < 88) { aiProg += Math.random() * 8 + 2; if (aiProg > 88) aiProg = 88; }
+    var bar = document.getElementById('aiBar'); if (bar) bar.style.width = aiProg + '%';
+    var pct = document.getElementById('aiPct'); if (pct) pct.textContent = Math.round(aiProg) + '%';
+    var step = document.getElementById('aiStep');
+    if (step) step.textContent = aiSteps[Math.min(Math.floor(aiProg / 16), aiSteps.length - 1)];
+  }, 500);
 
   var d = lastGA4Data;
   var summary = '## 나눔경영컨설팅 웹사이트 GA4 데이터 (최근 7일)\n\n';
@@ -844,15 +860,21 @@ function generateAIInsight() {
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
-    var text = data.content && data.content[0] ? data.content[0].text : '분석 결과를 가져올 수 없습니다.';
-    // 마크다운 → HTML 간단 변환
-    text = text.replace(/## (.*)/g, '<h3 style="margin:20px 0 8px;color:var(--text-primary);font-size:16px;">$1</h3>');
-    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    text = text.replace(/^\d+\.\s/gm, function(m) { return '<br>' + m; });
-    text = text.replace(/^- /gm, '<br>• ');
-    content.innerHTML = text;
+    clearInterval(aiTimer);
+    var bar = document.getElementById('aiBar'); if (bar) bar.style.width = '100%';
+    var pct = document.getElementById('aiPct'); if (pct) pct.textContent = '100%';
+    var step = document.getElementById('aiStep'); if (step) { step.textContent = '✅ 분석 완료!'; step.style.color = 'var(--accent-green)'; }
+    setTimeout(function() {
+      var text = data.content && data.content[0] ? data.content[0].text : '분석 결과를 가져올 수 없습니다.';
+      text = text.replace(/## (.*)/g, '<h3 style="margin:20px 0 8px;color:var(--text-primary);font-size:16px;">$1</h3>');
+      text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/^\d+\.\s/gm, function(m) { return '<br>' + m; });
+      text = text.replace(/^- /gm, '<br>• ');
+      content.innerHTML = text;
+    }, 600);
   })
   .catch(function(e) {
+    clearInterval(aiTimer);
     content.innerHTML = '<div style="color:var(--accent-red);">❌ AI 분석 실패: ' + e.message + '</div>';
   })
   .finally(function() {
