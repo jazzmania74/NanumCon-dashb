@@ -359,10 +359,10 @@ tr:hover td { background: #f0f4f8; }
     </table>
   </div>
 
-  <!-- 5. 유입 사이트 (전체폭) -->
+  <!-- 5. 유입 사이트 (전체폭, 가로 그래프) -->
   <div class="section-card">
-    <div class="section-title"><span class="icon icon-orange">🔗</span> 유입 사이트 Top 20</div>
-    <div style="height:350px;"><canvas id="sourceChart"></canvas></div>
+    <div class="section-title"><span class="icon icon-orange">🔗</span> 유입 사이트 Top 15</div>
+    <div style="height:480px;"><canvas id="sourceChart"></canvas></div>
   </div>
 
   <!-- 5-2. 신규 vs 재방문자 | 지역별 방문자 -->
@@ -427,6 +427,27 @@ const pageNames = {
 var serverPageTitles = {};
 function getPageName(p) {
   return serverPageTitles[p] || pageNames[p] || pageNames[p.replace(/\/$/,'')] || p;
+}
+
+// 채널별 대표색
+function getSourceColor(label) {
+  var l = label.toLowerCase();
+  if (l.indexOf('naver') >= 0) return '#03C75A';
+  if (l.indexOf('google') >= 0) return '#4285F4';
+  if (l.indexOf('bing') >= 0) return '#008373';
+  if (l.indexOf('facebook') >= 0 || l.indexOf('fb.') >= 0) return '#1877F2';
+  if (l.indexOf('instagram') >= 0) return '#E4405F';
+  if (l.indexOf('youtube') >= 0) return '#FF0000';
+  if (l.indexOf('twitter') >= 0 || l.indexOf('x.com') >= 0) return '#1DA1F2';
+  if (l.indexOf('linkedin') >= 0) return '#0A66C2';
+  if (l.indexOf('kakao') >= 0) return '#FEE500';
+  if (l.indexOf('direct') >= 0) return '#6B7280';
+  if (l.indexOf('chatgpt') >= 0 || l.indexOf('openai') >= 0) return '#10A37F';
+  if (l.indexOf('perplexity') >= 0) return '#20B2AA';
+  if (l.indexOf('daum') >= 0 || l.indexOf('dcinside') >= 0) return '#FF6600';
+  if (l.indexOf('mail') >= 0) return '#EA4335';
+  if (l.indexOf('fmkorea') >= 0) return '#2D6BB4';
+  return '#9CA3AF';
 }
 
 // 폴백 데이터
@@ -527,11 +548,11 @@ function initCharts() {
     options:{responsive:true,plugins:{legend:{display:false}},cutout:'45%'}
   });
 
-  // 유입 사이트 (세로 그래프)
+  // 유입 사이트 (가로 그래프 + 채널별 색상)
   sourceChartInst = new Chart(document.getElementById('sourceChart'), {
     type:'bar',
-    data:{labels:[],datasets:[{label:'이벤트수',data:[],backgroundColor:'rgba(0,102,204,0.7)',borderRadius:3,barPercentage:0.7}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{maxRotation:45,minRotation:45,font:{size:10}}}}}
+    data:{labels:[],datasets:[{label:'이벤트수',data:[],backgroundColor:[],borderRadius:4,barThickness:22}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f5f9'}},y:{ticks:{font:{size:12,weight:'600'}}}}}
   });
 
   // 신규 vs 재방문
@@ -631,9 +652,12 @@ function renderAll(data) {
   // 4. 페이지뷰 테이블
   renderPageViewTable(data.pageViews);
 
-  // 5. 유입 사이트
-  sourceChartInst.data.labels = data.sources.labels;
-  sourceChartInst.data.datasets[0].data = data.sources.data;
+  // 5. 유입 사이트 (채널별 대표색)
+  var srcLabels = data.sources.labels.slice(0, 15);
+  var srcData = data.sources.data.slice(0, 15);
+  sourceChartInst.data.labels = srcLabels;
+  sourceChartInst.data.datasets[0].data = srcData;
+  sourceChartInst.data.datasets[0].backgroundColor = srcLabels.map(function(l){ return getSourceColor(l); });
   sourceChartInst.update();
 
   // 5. 신규 vs 재방문

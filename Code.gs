@@ -189,13 +189,13 @@ function fetchAllGA4Data() {
     countries.data.push(parseInt(row.metricValues[0].value));
   });
 
-  // ── 6. 트래픽 소스 Top 20 ────────────────────────────────────
+  // ── 6. 트래픽 소스 Top 15 ────────────────────────────────────
   const srcResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
     dimensions: [{ name: 'sessionSourceMedium' }],
     metrics: [{ name: 'eventCount' }],
     orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
-    limit: 20
+    limit: 15
   }, prop);
 
   const sources = { labels: [], data: [] };
