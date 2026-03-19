@@ -334,7 +334,7 @@ tr:hover td { background: #f0f4f8; }
   <!-- 3. 시간대별 방문 분석 | 기기별 분포 -->
   <div class="two-col">
     <div class="chart-card">
-      <h3>시간대별 방문 분석</h3>
+      <h3>⏰ 시간대별 방문 분석 <span style="font-size:11px;font-weight:400;color:var(--text-light);">(최근 7일 합산)</span></h3>
       <canvas id="hourlyChart"></canvas>
     </div>
     <div class="chart-card">
@@ -359,31 +359,20 @@ tr:hover td { background: #f0f4f8; }
     </table>
   </div>
 
-  <!-- 5. 유입 사이트 | 신규 vs 재방문자 -->
-  <div class="two-col">
-    <div class="chart-card">
-      <h3>유입 사이트</h3>
-      <canvas id="sourceChart"></canvas>
-    </div>
-    <div class="chart-card">
-      <h3>신규 vs 재방문자</h3>
-      <div style="max-width:200px;margin:0 auto;"><canvas id="nvrChart"></canvas></div>
-      <div class="donut-legend" id="nvrLegend">
-        <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span> 신규 0%</div>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-orange)"></span> 재방문 0%</div>
-      </div>
-    </div>
+  <!-- 5. 유입 사이트 (전체폭) -->
+  <div class="section-card">
+    <div class="section-title"><span class="icon icon-orange">🔗</span> 유입 사이트 Top 20</div>
+    <div style="height:350px;"><canvas id="sourceChart"></canvas></div>
   </div>
 
-  <!-- 6. 유입 검색어 | 지역별 방문자 -->
+  <!-- 5-2. 신규 vs 재방문자 | 지역별 방문자 -->
   <div class="two-col">
-    <div class="chart-card" style="overflow:auto;">
-      <h3>유입 검색어</h3>
-      <div id="searchTermsContainer">
-        <table style="width:100%;">
-          <thead><tr><th>#</th><th>검색어</th><th>세션수</th></tr></thead>
-          <tbody id="searchTermsBody"></tbody>
-        </table>
+    <div class="chart-card">
+      <h3>신규 vs 재방문자</h3>
+      <div style="max-width:160px;margin:0 auto;"><canvas id="nvrChart"></canvas></div>
+      <div class="donut-legend" id="nvrLegend" style="align-items:center;">
+        <div class="legend-item"><span class="legend-dot" style="background:var(--primary)"></span> 신규 0%</div>
+        <div class="legend-item"><span class="legend-dot" style="background:var(--accent-orange)"></span> 재방문 0%</div>
       </div>
     </div>
     <div class="chart-card">
@@ -392,14 +381,23 @@ tr:hover td { background: #f0f4f8; }
     </div>
   </div>
 
-  <!-- 7. 이탈률 높은 페이지 -->
+  <!-- 6. 유입 검색어 -->
   <div class="table-section">
-    <div class="section-title"><span class="icon icon-red">🚪</span> 이탈률 높은 페이지</div>
+    <div class="section-title"><span class="icon icon-purple">🔍</span> 유입 검색어</div>
+    <table>
+      <thead><tr><th>#</th><th>검색어</th><th>세션수</th></tr></thead>
+      <tbody id="searchTermsBody"></tbody>
+    </table>
+  </div>
+
+  <!-- 7. 페이지별 평균 체류시간 -->
+  <div class="table-section">
+    <div class="section-title"><span class="icon icon-purple">⏱️</span> 페이지별 평균 체류시간 Top 20</div>
     <table>
       <thead>
-        <tr><th>#</th><th>페이지</th><th>세션수</th><th>이탈률</th></tr>
+        <tr><th>#</th><th>페이지</th><th>세션수</th><th>평균 체류시간</th></tr>
       </thead>
-      <tbody id="bounceTableBody"></tbody>
+      <tbody id="dwellTableBody"></tbody>
     </table>
   </div>
 
@@ -483,17 +481,15 @@ const FALLBACK = {
     {term:'ChatGPT 교육', sessions:4}
   ],
   newVsReturning: { newPct:85, returningPct:15 },
-  highBouncePages: [
-    {path:'/257', sessions:91, bounce:37.36},
-    {path:'/255', sessions:71, bounce:36.62},
-    {path:'/246', sessions:66, bounce:36.36},
-    {path:'/253', sessions:66, bounce:34.85},
-    {path:'/', sessions:50, bounce:34.00},
-    {path:'/248', sessions:81, bounce:33.33},
-    {path:'/247', sessions:93, bounce:30.11},
-    {path:'/254', sessions:55, bounce:30.91},
-    {path:'/250', sessions:8, bounce:25.00},
-    {path:'/3', sessions:10, bounce:10.00}
+  dwellTimePages: [
+    {path:'/247', avgDuration:185, avgMin:3, avgSec:5, sessions:93},
+    {path:'/248', avgDuration:160, avgMin:2, avgSec:40, sessions:81},
+    {path:'/253', avgDuration:140, avgMin:2, avgSec:20, sessions:66},
+    {path:'/', avgDuration:120, avgMin:2, avgSec:0, sessions:50},
+    {path:'/246', avgDuration:100, avgMin:1, avgSec:40, sessions:66},
+    {path:'/255', avgDuration:90, avgMin:1, avgSec:30, sessions:71},
+    {path:'/254', avgDuration:75, avgMin:1, avgSec:15, sessions:55},
+    {path:'/3', avgDuration:60, avgMin:1, avgSec:0, sessions:10}
   ]
 };
 
@@ -528,21 +524,21 @@ function initCharts() {
   deviceChartInst = new Chart(document.getElementById('deviceChart'), {
     type:'doughnut',
     data:{labels:['Mobile','Desktop','Tablet'],datasets:[{data:[0,0,0],backgroundColor:['#0066CC','#00A5E5','#7c3aed'],borderWidth:0}]},
-    options:{responsive:true,plugins:{legend:{display:false}},cutout:'65%'}
+    options:{responsive:true,plugins:{legend:{display:false}},cutout:'45%'}
   });
 
-  // 유입 사이트
+  // 유입 사이트 (세로 그래프)
   sourceChartInst = new Chart(document.getElementById('sourceChart'), {
     type:'bar',
-    data:{labels:[],datasets:[{label:'세션수',data:[],backgroundColor:['#00B67A','#0066CC','#db2777','#FF6B00','#7c3aed','#0891b2','#dc2626'],borderRadius:4,barThickness:20}]},
-    options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+    data:{labels:[],datasets:[{label:'이벤트수',data:[],backgroundColor:'rgba(0,102,204,0.7)',borderRadius:3,barPercentage:0.7}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}},x:{grid:{display:false},ticks:{maxRotation:45,minRotation:45,font:{size:10}}}}}
   });
 
   // 신규 vs 재방문
   nvrChartInst = new Chart(document.getElementById('nvrChart'), {
     type:'doughnut',
     data:{labels:['신규 방문자','재방문자'],datasets:[{data:[0,0],backgroundColor:['#0066CC','#FF6B00'],borderWidth:0}]},
-    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%';}}}},cutout:'65%'}
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.label+': '+ctx.raw+'%';}}}},cutout:'45%'}
   });
 
   // 지역별 방문자
@@ -656,8 +652,8 @@ function renderAll(data) {
   cityChartInst.data.datasets[0].data = data.cities.data;
   cityChartInst.update();
 
-  // 7. 이탈률 높은 페이지
-  renderBounceTable(data.highBouncePages);
+  // 7. 페이지별 평균 체류시간
+  renderDwellTable(data.dwellTimePages);
 
   updateTimestamp();
 }
@@ -690,23 +686,22 @@ function renderSearchTerms(terms) {
   });
 }
 
-// 이탈률 테이블
-function renderBounceTable(pages) {
-  var tb = document.getElementById('bounceTableBody');
+// 체류시간 테이블
+function renderDwellTable(pages) {
+  var tb = document.getElementById('dwellTableBody');
   if (!tb) return;
   tb.innerHTML = '';
-  if (!pages || !pages.length) return;
-  // 이탈률 높은 순으로 정렬
-  var sorted = pages.slice().sort(function(a,b){return b.bounce - a.bounce;});
-  sorted.forEach(function(p, i) {
-    var bc, barColor;
-    if (p.bounce > 50) { bc = 'var(--accent-red)'; barColor = '#dc2626'; }
-    else if (p.bounce > 35) { bc = 'var(--accent-orange)'; barColor = '#FF6B00'; }
-    else { bc = 'var(--accent-green)'; barColor = '#00B67A'; }
-    var bw = Math.min(100, (p.bounce / 60) * 100);
+  if (!pages || !pages.length) { tb.innerHTML = '<tr><td colspan="4" class="empty-msg">체류시간 데이터가 없습니다</td></tr>'; return; }
+  var maxDur = Math.max.apply(null, pages.map(function(p){return p.avgDuration||0;}));
+  pages.forEach(function(p, i) {
+    var min = p.avgMin || Math.floor((p.avgDuration||0)/60);
+    var sec = p.avgSec || Math.round((p.avgDuration||0)%60);
+    var timeStr = String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+    var bw = maxDur > 0 ? Math.max(4, (p.avgDuration/maxDur)*120) : 4;
+    var barColor = p.avgDuration > 120 ? '#00B67A' : p.avgDuration > 60 ? '#0066CC' : '#FF6B00';
     tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
       '<td>'+p.sessions+'</td>' +
-      '<td><div class="bar-cell"><div class="bounce-bar" style="width:'+bw+'px;background:'+barColor+'"></div><span style="color:'+bc+';font-weight:600;">'+p.bounce+'%</span></div></td></tr>';
+      '<td><div class="bar-cell"><div class="bar" style="width:'+bw+'px;background:'+barColor+'"></div><strong>'+timeStr+'</strong></div></td></tr>';
   });
 }
 

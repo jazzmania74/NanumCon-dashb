@@ -31,7 +31,7 @@ function fetchPageTitle(path) {
     if (match && match[1]) {
       var title = match[1].trim();
       // "제목 - 사이트명" 형식에서 사이트명 제거
-      title = title.replace(/\s*[-|]\s*나눔경영컨설팅.*$/i, '').trim();
+      title = title.replace(/\s*[-–—|]\s*나눔경영컨설팅.*$/i, '').trim();
       return title || '';
     }
   } catch(e) {}
@@ -196,13 +196,13 @@ function fetchAllGA4Data() {
     countries.data.push(parseInt(row.metricValues[0].value));
   });
 
-  // ── 6. 트래픽 소스 Top 10 ────────────────────────────────────
+  // ── 6. 트래픽 소스 Top 20 ────────────────────────────────────
   const srcResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
     dimensions: [{ name: 'sessionSourceMedium' }],
     metrics: [{ name: 'eventCount' }],
     orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
-    limit: 10
+    limit: 20
   }, prop);
 
   const sources = { labels: [], data: [] };
@@ -341,24 +341,26 @@ function fetchAllGA4Data() {
     returningPct: nvrTotal > 0 ? Math.round((nvrMap['returning'] || 0) / nvrTotal * 1000) / 10 : 0
   };
 
-  // ── 14. 이탈률 높은 페이지 Top 10 ─────────────────────────────
-  const hbResp = AnalyticsData.Properties.runReport({
+  // ── 14. 페이지별 평균 체류시간 Top 20 ──────────────────────────
+  const dwellResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
-    dimensions: [{ name: 'landingPagePlusQueryString' }],
-    metrics: [{ name: 'sessions' }, { name: 'bounceRate' }],
-    orderBys: [{ metric: { metricName: 'bounceRate' }, desc: true }],
-    limit: 10
+    dimensions: [{ name: 'pagePath' }],
+    metrics: [{ name: 'averageSessionDuration' }, { name: 'sessions' }],
+    orderBys: [{ metric: { metricName: 'averageSessionDuration' }, desc: true }],
+    limit: 20
   }, prop);
 
-  var highBouncePages = [];
-  (hbResp.rows || []).forEach(function(row) {
+  var dwellTimePages = [];
+  (dwellResp.rows || []).forEach(function(row) {
     var path = row.dimensionValues[0].value;
-    if (!path.startsWith('/')) path = '/' + path;
     path = path.split('?')[0];
-    highBouncePages.push({
+    var dur = parseFloat(row.metricValues[0].value);
+    dwellTimePages.push({
       path: path,
-      sessions: parseInt(row.metricValues[0].value),
-      bounce: Math.round(parseFloat(row.metricValues[1].value) * 1000) / 10
+      avgDuration: dur,
+      avgMin: Math.floor(dur / 60),
+      avgSec: Math.round(dur % 60),
+      sessions: parseInt(row.metricValues[1].value)
     });
   });
 
@@ -377,7 +379,7 @@ function fetchAllGA4Data() {
   var allPaths = [];
   pageViews.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
   landingPages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
-  highBouncePages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
+  dwellTimePages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
   var pageTitles = fetchPageTitles(allPaths);
 
   return {
@@ -395,7 +397,7 @@ function fetchAllGA4Data() {
     hourly:      hourly,
     searchTerms: searchTerms,
     newVsReturning: newVsReturning,
-    highBouncePages: highBouncePages,
+    dwellTimePages: dwellTimePages,
     pageTitles:  pageTitles
   };
 }
