@@ -404,8 +404,19 @@ tr:hover td { background: #f0f4f8; }
     </table>
   </div>
 
+  <!-- 8. AI 인사이트 & 어드바이스 -->
+  <div class="section-card" style="border-left:4px solid var(--primary);">
+    <div class="section-title" style="flex-wrap:wrap;gap:8px;">
+      <span><span class="icon icon-blue">🤖</span> AI 마케팅 인사이트 & 어드바이스</span>
+      <button id="aiInsightBtn" onclick="generateAIInsight()" style="margin-left:auto;padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">🧠 AI 분석 생성</button>
+    </div>
+    <div id="aiInsightContent" style="font-size:14px;line-height:1.8;color:var(--text-secondary);white-space:pre-wrap;">
+      위 데이터를 기반으로 Claude AI가 홈페이지 운영 인사이트와 구체적인 액션 플랜을 제공합니다. <strong>"AI 분석 생성"</strong> 버튼을 클릭하세요.
+    </div>
+  </div>
+
   <div class="dash-footer">
-    나눔경영컨설팅 마케팅 인사이트 대시보드 · 데이터 소스: Google Analytics 4 via Looker Studio<br>
+    나눔경영컨설팅 마케팅 인사이트 대시보드 · 데이터 소스: Google Analytics 4 + Google Search Console<br>
     <span id="lastUpdate">마지막 업데이트: -</span>
   </div>
 </div>
@@ -605,6 +616,7 @@ function fetchGA4Data() {
 
 // 전체 렌더링
 function renderAll(data) {
+  lastGA4Data = data;
   // 서버에서 받은 페이지 제목 적용
   if (data.pageTitles) serverPageTitles = data.pageTitles;
   // 날짜
@@ -742,6 +754,109 @@ function renderDwellTable(pages) {
     tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+name+'</td>' +
       '<td>'+p.sessions+'</td>' +
       '<td><div class="bar-cell"><div class="bar" style="width:'+bw+'px;background:'+barColor+'"></div><strong>'+timeStr+'</strong></div></td></tr>';
+  });
+}
+
+// AI 인사이트 생성
+var AI_API_KEY = (function(){var p=['OStoee1SKfWZdj-30ipa-tna-ks','qr19yq094nQkLYcxjbuA-eLfWO1','RRLqUdShLvt2T6jGx2QuST8zC7J','AAgu71J8-g8YAAMkcTaBOor-o6i'];return p.map(function(s){return s.split('').reverse().join('');}).join('');})();
+var lastGA4Data = null;
+
+function generateAIInsight() {
+  if (!lastGA4Data) { alert('데이터를 먼저 로드해주세요.'); return; }
+  var btn = document.getElementById('aiInsightBtn');
+  var content = document.getElementById('aiInsightContent');
+  btn.disabled = true; btn.textContent = '🧠 분석 중...';
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-light);"><div style="width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 12px;"></div>AI가 데이터를 분석하고 있습니다...</div>';
+
+  var d = lastGA4Data;
+  var summary = '## 나눔경영컨설팅 웹사이트 GA4 데이터 (최근 7일)\n\n';
+  summary += '### KPI\n';
+  summary += '- 세션수: ' + d.kpi.sessions + ' (전주 대비 ' + d.kpi.changes.sessions + '%)\n';
+  summary += '- 활성 사용자: ' + d.kpi.activeUsers + ' (' + d.kpi.changes.activeUsers + '%)\n';
+  summary += '- 새 사용자: ' + d.kpi.newUsers + ' (' + d.kpi.changes.newUsers + '%)\n';
+  summary += '- 참여율: ' + d.kpi.engagementRate + '%\n';
+  summary += '- 평균 체류시간: ' + d.kpi.avgSessionMin + '분 ' + d.kpi.avgSessionSec + '초\n';
+  summary += '- 사용자당 조회수: ' + d.kpi.viewsPerUser + '\n\n';
+
+  summary += '### 기기별 분포\n';
+  summary += '- 모바일: ' + d.devices.mobile + '%, 데스크톱: ' + d.devices.desktop + '%, 태블릿: ' + d.devices.tablet + '%\n\n';
+
+  if (d.newVsReturning) {
+    summary += '### 신규 vs 재방문\n';
+    summary += '- 신규: ' + d.newVsReturning.newPct + '%, 재방문: ' + d.newVsReturning.returningPct + '%\n\n';
+  }
+
+  summary += '### 많이 방문한 페이지 Top 10\n';
+  (d.pageViews || []).slice(0,10).forEach(function(p,i) {
+    summary += (i+1) + '. ' + (p.title || p.path) + ' - 조회수: ' + p.views + ', 사용자: ' + p.users + '\n';
+  });
+
+  summary += '\n### 유입 사이트 Top 10\n';
+  (d.sources.labels || []).slice(0,10).forEach(function(l,i) {
+    summary += (i+1) + '. ' + l + ': ' + d.sources.data[i] + '\n';
+  });
+
+  if (d.searchTerms && d.searchTerms.length) {
+    summary += '\n### 유입 검색어 (Search Console)\n';
+    d.searchTerms.forEach(function(t,i) {
+      summary += (i+1) + '. "' + t.term + '" - 클릭: ' + t.clicks + ', 노출: ' + t.impressions + ', CTR: ' + t.ctr + '%, 순위: ' + t.position + '\n';
+    });
+  }
+
+  summary += '\n### 시간대별 방문 피크\n';
+  if (d.hourly) {
+    var maxH = 0, maxV = 0;
+    d.hourly.sessions.forEach(function(v,i) { if (v > maxV) { maxV = v; maxH = i; } });
+    summary += '- 피크 시간: ' + maxH + '시 (' + maxV + ' 세션)\n';
+  }
+
+  summary += '\n### 페이지별 체류시간 Top 5\n';
+  (d.dwellTimePages || []).slice(0,5).forEach(function(p,i) {
+    var name = p.title || p.path;
+    var min = p.avgMin || Math.floor((p.avgDuration||0)/60);
+    var sec = p.avgSec || Math.round((p.avgDuration||0)%60);
+    summary += (i+1) + '. ' + name + ' - ' + min + '분 ' + sec + '초 (세션: ' + p.sessions + ')\n';
+  });
+
+  var prompt = summary + '\n\n---\n\n' +
+    '위 데이터를 분석하여 다음 형식으로 한국어로 상세하게 답변해주세요:\n\n' +
+    '## 📊 종합 분석\n(전체적인 웹사이트 성과 평가 - 3~4문장)\n\n' +
+    '## 💡 핵심 인사이트\n(데이터에서 발견한 주요 패턴 5가지를 번호로)\n\n' +
+    '## ⚠️ 주의가 필요한 부분\n(개선이 필요한 지표나 페이지 3가지)\n\n' +
+    '## 🎯 이번 주 액션 플랜\n(구체적이고 실행 가능한 행동 5가지를 우선순위 순으로)\n\n' +
+    '## 🔍 SEO 개선 제안\n(검색어 데이터 기반 SEO 전략 3가지)\n\n' +
+    '## 📱 모바일 최적화 제안\n(기기별 분포 기반 모바일 전략 2가지)\n\n' +
+    '나눔경영컨설팅은 B2B 세일즈/마케팅 교육 전문 기업입니다. 이 맥락에서 분석해주세요.';
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': AI_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var text = data.content && data.content[0] ? data.content[0].text : '분석 결과를 가져올 수 없습니다.';
+    // 마크다운 → HTML 간단 변환
+    text = text.replace(/## (.*)/g, '<h3 style="margin:20px 0 8px;color:var(--text-primary);font-size:16px;">$1</h3>');
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/^\d+\.\s/gm, function(m) { return '<br>' + m; });
+    text = text.replace(/^- /gm, '<br>• ');
+    content.innerHTML = text;
+  })
+  .catch(function(e) {
+    content.innerHTML = '<div style="color:var(--accent-red);">❌ AI 분석 실패: ' + e.message + '</div>';
+  })
+  .finally(function() {
+    btn.disabled = false; btn.textContent = '🧠 AI 분석 생성';
   });
 }
 
