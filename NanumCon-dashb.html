@@ -652,12 +652,15 @@ function renderAll(data) {
   // 4. 페이지뷰 테이블
   renderPageViewTable(data.pageViews);
 
-  // 5. 유입 사이트 (채널별 대표색)
-  var srcLabels = data.sources.labels.slice(0, 15);
+  // 5. 유입 사이트 (채널별 대표색 + 용어 변환)
+  var srcLabelsRaw = data.sources.labels.slice(0, 15);
   var srcData = data.sources.data.slice(0, 15);
+  var srcLabels = srcLabelsRaw.map(function(l) {
+    return l.replace(/\/ organic/g, '/ 검색유입').replace(/\/ referral/g, '/ 외부연결').replace(/\/ \(none\)/g, '/ 직접방문');
+  });
   sourceChartInst.data.labels = srcLabels;
   sourceChartInst.data.datasets[0].data = srcData;
-  sourceChartInst.data.datasets[0].backgroundColor = srcLabels.map(function(l){ return getSourceColor(l); });
+  sourceChartInst.data.datasets[0].backgroundColor = srcLabelsRaw.map(function(l){ return getSourceColor(l); });
   sourceChartInst.update();
 
   // 5. 신규 vs 재방문
