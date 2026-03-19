@@ -426,7 +426,10 @@ const pageNames = {
 };
 var serverPageTitles = {};
 function getPageName(p) {
-  return serverPageTitles[p] || pageNames[p] || pageNames[p.replace(/\/$/,'')] || p;
+  var clean = p.replace(/\/$/,'');
+  var withSlash = clean + '/';
+  return serverPageTitles[p] || serverPageTitles[clean] || serverPageTitles[withSlash]
+    || pageNames[p] || pageNames[clean] || pageNames[withSlash] || p;
 }
 
 // 채널별 대표색

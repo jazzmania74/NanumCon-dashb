@@ -27,7 +27,7 @@ function fetchPageTitlesFromGA4(prop, dateRange) {
       dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
       metrics: [{ name: 'screenPageViews' }],
       orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-      limit: 50
+      limit: 100
     }, prop);
     var titles = {};
     (resp.rows || []).forEach(function(row) {
@@ -35,7 +35,13 @@ function fetchPageTitlesFromGA4(prop, dateRange) {
       var title = row.dimensionValues[1].value || '';
       // "제목 – 사이트명" 형식에서 사이트명 제거
       title = title.replace(/\s*[-–—|]\s*나눔경영컨설팅.*$/i, '').trim();
-      if (title && !titles[path]) titles[path] = title;
+      if (title && title !== '(not set)') {
+        // path 양쪽 변형 모두 저장 (/69, /69/)
+        var clean = path.replace(/\/$/, '');
+        if (!titles[path]) titles[path] = title;
+        if (clean && !titles[clean]) titles[clean] = title;
+        if (!titles[clean + '/']) titles[clean + '/'] = title;
+      }
     });
     return titles;
   } catch(e) { return {}; }
