@@ -18,34 +18,27 @@
  */
 
 const GA4_PROPERTY_ID = '302777380';
-const SITE_URL = 'https://nanumcon.com';
 
-// 페이지 제목 가져오기
-function fetchPageTitle(path) {
+// GA4에서 페이지 제목 가져오기 (pagePath → pageTitle 매핑)
+function fetchPageTitlesFromGA4(prop, dateRange) {
   try {
-    var url = SITE_URL + path;
-    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
-    if (resp.getResponseCode() !== 200) return '';
-    var html = resp.getContentText();
-    var match = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-    if (match && match[1]) {
-      var title = match[1].trim();
-      // "제목 - 사이트명" 형식에서 사이트명 제거
+    var resp = AnalyticsData.Properties.runReport({
+      dateRanges: [dateRange],
+      dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
+      metrics: [{ name: 'screenPageViews' }],
+      orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+      limit: 50
+    }, prop);
+    var titles = {};
+    (resp.rows || []).forEach(function(row) {
+      var path = row.dimensionValues[0].value.split('?')[0];
+      var title = row.dimensionValues[1].value || '';
+      // "제목 – 사이트명" 형식에서 사이트명 제거
       title = title.replace(/\s*[-–—|]\s*나눔경영컨설팅.*$/i, '').trim();
-      return title || '';
-    }
-  } catch(e) {}
-  return '';
-}
-
-function fetchPageTitles(paths) {
-  var titles = {};
-  paths.forEach(function(p) {
-    if (!p || p === '/') { titles[p] = '홈'; return; }
-    var t = fetchPageTitle(p);
-    if (t) titles[p] = t;
-  });
-  return titles;
+      if (title && !titles[path]) titles[path] = title;
+    });
+    return titles;
+  } catch(e) { return {}; }
 }
 
 // ─── 웹앱 진입점 ───────────────────────────────────────────────
@@ -375,12 +368,8 @@ function fetchAllGA4Data() {
   else if (y1 === y2)          dateRangeStr = y1 + '. ' + m1 + '. ' + d1 + '. ~ ' + m2 + '. ' + d2 + '.';
   else                         dateRangeStr = y1 + '. ' + m1 + '. ' + d1 + '. ~ ' + y2 + '. ' + m2 + '. ' + d2 + '.';
 
-  // ── 페이지 제목 크롤링 ──────────────────────────────────────
-  var allPaths = [];
-  pageViews.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
-  landingPages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
-  dwellTimePages.forEach(function(p) { if (allPaths.indexOf(p.path) < 0) allPaths.push(p.path); });
-  var pageTitles = fetchPageTitles(allPaths);
+  // ── 페이지 제목 (GA4 pageTitle dimension) ──────────────────
+  var pageTitles = fetchPageTitlesFromGA4(prop, curr);
 
   return {
     dateRange:   dateRangeStr,
