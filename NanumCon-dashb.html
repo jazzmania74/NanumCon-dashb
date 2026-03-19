@@ -696,7 +696,8 @@ function renderPageViewTable(pages) {
   tb.innerHTML = '';
   pages.slice(0,20).forEach(function(p, i) {
     var pct = total > 0 ? ((p.views/total)*100).toFixed(1) : '0.0';
-    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
+    var name = p.title || getPageName(p.path);
+    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+name+'</td>' +
       '<td><strong>'+p.views+'</strong></td><td>'+p.users+'</td>' +
       '<td><div class="bar-cell"><div class="bar" style="width:'+Math.max(4,pct*3)+'px"></div>'+pct+'%</div></td></tr>';
   });
@@ -729,7 +730,8 @@ function renderDwellTable(pages) {
     var timeStr = String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
     var bw = maxDur > 0 ? Math.max(4, (p.avgDuration/maxDur)*120) : 4;
     var barColor = p.avgDuration > 120 ? '#00B67A' : p.avgDuration > 60 ? '#0066CC' : '#FF6B00';
-    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+getPageName(p.path)+'</td>' +
+    var name = p.title || getPageName(p.path);
+    tb.innerHTML += '<tr><td>'+(i+1)+'</td><td class="page-name">'+name+'</td>' +
       '<td>'+p.sessions+'</td>' +
       '<td><div class="bar-cell"><div class="bar" style="width:'+bw+'px;background:'+barColor+'"></div><strong>'+timeStr+'</strong></div></td></tr>';
   });

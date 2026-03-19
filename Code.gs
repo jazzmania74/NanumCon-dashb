@@ -246,10 +246,10 @@ function fetchAllGA4Data() {
     });
   });
 
-  // ── 9. 페이지뷰 Top 20 ───────────────────────────────────────
+  // ── 9. 페이지뷰 Top 20 (pageTitle 포함) ─────────────────────
   const pvResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
-    dimensions: [{ name: 'pagePath' }],
+    dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
     metrics: [{ name: 'screenPageViews' }, { name: 'activeUsers' }],
     orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
     limit: 20
@@ -259,8 +259,10 @@ function fetchAllGA4Data() {
   (pvResp.rows || []).forEach(function(row) {
     let path = row.dimensionValues[0].value;
     path = path.split('?')[0];
+    var title = (row.dimensionValues[1].value || '').replace(/\s*[-–—|]\s*나눔경영컨설팅.*$/i, '').trim();
     pageViews.push({
       path: path,
+      title: title || '',
       views: parseInt(row.metricValues[0].value),
       users: parseInt(row.metricValues[1].value)
     });
@@ -340,10 +342,10 @@ function fetchAllGA4Data() {
     returningPct: nvrTotal > 0 ? Math.round((nvrMap['returning'] || 0) / nvrTotal * 1000) / 10 : 0
   };
 
-  // ── 14. 페이지별 평균 체류시간 Top 20 ──────────────────────────
+  // ── 14. 페이지별 평균 체류시간 Top 20 (pageTitle 포함) ─────────
   const dwellResp = AnalyticsData.Properties.runReport({
     dateRanges: [curr],
-    dimensions: [{ name: 'pagePath' }],
+    dimensions: [{ name: 'pagePath' }, { name: 'pageTitle' }],
     metrics: [{ name: 'averageSessionDuration' }, { name: 'sessions' }],
     orderBys: [{ metric: { metricName: 'averageSessionDuration' }, desc: true }],
     limit: 20
@@ -353,9 +355,11 @@ function fetchAllGA4Data() {
   (dwellResp.rows || []).forEach(function(row) {
     var path = row.dimensionValues[0].value;
     path = path.split('?')[0];
+    var title = (row.dimensionValues[1].value || '').replace(/\s*[-–—|]\s*나눔경영컨설팅.*$/i, '').trim();
     var dur = parseFloat(row.metricValues[0].value);
     dwellTimePages.push({
       path: path,
+      title: title || '',
       avgDuration: dur,
       avgMin: Math.floor(dur / 60),
       avgSec: Math.round(dur % 60),
