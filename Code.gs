@@ -101,18 +101,20 @@ function fetchAllGA4Data() {
     metrics: [
       { name: 'sessions' },
       { name: 'activeUsers' },
-      { name: 'newUsers' }
+      { name: 'newUsers' },
+      { name: 'screenPageViews' }
     ],
     orderBys: [{ dimension: { dimensionName: 'date' } }]
   }, prop);
 
-  const trend = { labels: [], sessions: [], active: [], newU: [] };
+  const trend = { labels: [], sessions: [], active: [], newU: [], pageViews: [] };
   (trendResp.rows || []).forEach(function(row) {
     const d = row.dimensionValues[0].value; // YYYYMMDD
     trend.labels.push(parseInt(d.slice(4, 6)) + '/' + parseInt(d.slice(6, 8)));
     trend.sessions.push(parseInt(row.metricValues[0].value));
     trend.active.push(parseInt(row.metricValues[1].value));
     trend.newU.push(parseInt(row.metricValues[2].value));
+    trend.pageViews.push(parseInt(row.metricValues[3].value));
   });
 
   // ── 3. 디바이스 ───────────────────────────────────────────────
@@ -257,6 +259,80 @@ function fetchAllGA4Data() {
   const ecomChange = ecomPrev > 0
     ? Math.round((ecomCurr - ecomPrev) / ecomPrev * 1000) / 10 : 0;
 
+  // ── 11. 시간대별 방문 (0~23시) ───────────────────────────────
+  const hourResp = AnalyticsData.Properties.runReport({
+    dateRanges: [curr],
+    dimensions: [{ name: 'hour' }],
+    metrics: [{ name: 'sessions' }, { name: 'activeUsers' }],
+    orderBys: [{ dimension: { dimensionName: 'hour' } }]
+  }, prop);
+
+  const hourly = { labels: [], sessions: [], activeUsers: [] };
+  for (var h = 0; h < 24; h++) { hourly.labels.push(h + '시'); hourly.sessions.push(0); hourly.activeUsers.push(0); }
+  (hourResp.rows || []).forEach(function(row) {
+    var hi = parseInt(row.dimensionValues[0].value);
+    hourly.sessions[hi] = parseInt(row.metricValues[0].value);
+    hourly.activeUsers[hi] = parseInt(row.metricValues[1].value);
+  });
+
+  // ── 12. 검색어 Top 15 ─────────────────────────────────────────
+  var searchTerms = [];
+  try {
+    const stResp = AnalyticsData.Properties.runReport({
+      dateRanges: [curr],
+      dimensions: [{ name: 'sessionManualTerm' }],
+      metrics: [{ name: 'sessions' }],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 15
+    }, prop);
+    (stResp.rows || []).forEach(function(row) {
+      var term = row.dimensionValues[0].value;
+      if (term && term !== '(not set)' && term !== '(not provided)') {
+        searchTerms.push({ term: term, sessions: parseInt(row.metricValues[0].value) });
+      }
+    });
+  } catch(e) { /* searchTerm 미지원 시 빈 배열 */ }
+
+  // ── 13. 신규 vs 재방문자 ──────────────────────────────────────
+  const nvrResp = AnalyticsData.Properties.runReport({
+    dateRanges: [curr],
+    dimensions: [{ name: 'newVsReturning' }],
+    metrics: [{ name: 'sessions' }]
+  }, prop);
+
+  var nvrMap = {};
+  var nvrTotal = 0;
+  (nvrResp.rows || []).forEach(function(row) {
+    var v = parseInt(row.metricValues[0].value);
+    nvrMap[row.dimensionValues[0].value] = v;
+    nvrTotal += v;
+  });
+  var newVsReturning = {
+    newPct: nvrTotal > 0 ? Math.round((nvrMap['new'] || 0) / nvrTotal * 1000) / 10 : 0,
+    returningPct: nvrTotal > 0 ? Math.round((nvrMap['returning'] || 0) / nvrTotal * 1000) / 10 : 0
+  };
+
+  // ── 14. 이탈률 높은 페이지 Top 10 ─────────────────────────────
+  const hbResp = AnalyticsData.Properties.runReport({
+    dateRanges: [curr],
+    dimensions: [{ name: 'landingPagePlusQueryString' }],
+    metrics: [{ name: 'sessions' }, { name: 'bounceRate' }],
+    orderBys: [{ metric: { metricName: 'bounceRate' }, desc: true }],
+    limit: 10
+  }, prop);
+
+  var highBouncePages = [];
+  (hbResp.rows || []).forEach(function(row) {
+    var path = row.dimensionValues[0].value;
+    if (!path.startsWith('/')) path = '/' + path;
+    path = path.split('?')[0];
+    highBouncePages.push({
+      path: path,
+      sessions: parseInt(row.metricValues[0].value),
+      bounce: Math.round(parseFloat(row.metricValues[1].value) * 1000) / 10
+    });
+  });
+
   // ── 날짜 범위 문자열 ──────────────────────────────────────────
   const now  = new Date();
   const yest = new Date(now); yest.setDate(now.getDate() - 1);
@@ -279,6 +355,10 @@ function fetchAllGA4Data() {
     cities:      cities,
     landingPages: landingPages,
     pageViews:   pageViews,
-    ecom:        { total: ecomCurr, change: ecomChange }
+    ecom:        { total: ecomCurr, change: ecomChange },
+    hourly:      hourly,
+    searchTerms: searchTerms,
+    newVsReturning: newVsReturning,
+    highBouncePages: highBouncePages
   };
 }
